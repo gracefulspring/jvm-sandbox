@@ -203,7 +203,7 @@ check_permission() {
   [[ ! -x "${SANDBOX_JAVA_HOME}" ]] &&
     exit_on_err 1 "permission denied, ${SANDBOX_JAVA_HOME} is not accessible! please set JAVA_HOME"
 
-  # check java command is executeable
+  # check java command is executable
   [[ ! -x "${SANDBOX_JAVA_HOME}/bin/java" ]] &&
     exit_on_err 1 "permission denied, ${SANDBOX_JAVA_HOME}/bin/java is not executable!"
 

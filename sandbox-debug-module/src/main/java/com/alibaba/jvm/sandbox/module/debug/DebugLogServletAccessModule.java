@@ -7,8 +7,6 @@ import com.alibaba.jvm.sandbox.api.listener.ext.Advice;
 import com.alibaba.jvm.sandbox.api.listener.ext.AdviceListener;
 import com.alibaba.jvm.sandbox.api.listener.ext.EventWatchBuilder;
 import com.alibaba.jvm.sandbox.api.resource.ModuleEventWatcher;
-import com.alibaba.jvm.sandbox.module.debug.util.InterfaceProxyUtils.MethodInterceptor;
-import com.alibaba.jvm.sandbox.module.debug.util.InterfaceProxyUtils.MethodInvocation;
 import com.alibaba.jvm.sandbox.module.debug.util.InterfaceProxyUtils.ProxyMethod;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +30,7 @@ import static org.apache.commons.lang3.ArrayUtils.contains;
  */
 @MetaInfServices(Module.class)
 @Information(id = "debug-servlet-access", version = "0.0.2", author = "luanjia@taobao.com")
-public class LogServletAccessModule implements Module, LoadCompleted {
+public class DebugLogServletAccessModule implements Module, LoadCompleted {
 
     private final Logger logger = LoggerFactory.getLogger("DEBUG-SERVLET-ACCESS");
 
@@ -105,20 +103,7 @@ public class LogServletAccessModule implements Module, LoadCompleted {
                             return;
                         }
 
-                        // 俘虏HttpServletRequest参数为傀儡
-                        final IHttpServletRequest httpServletRequest = puppet(
-                                IHttpServletRequest.class,
-                                advice.getParameterArray()[0]
-                        );
-
-                        // 初始化HttpAccess
-                        final HttpAccess httpAccess = new HttpAccess(
-                                httpServletRequest.getRemoteAddress(),
-                                httpServletRequest.getMethod(),
-                                httpServletRequest.getRequestURI(),
-                                httpServletRequest.getParameterMap(),
-                                httpServletRequest.getHeader("User-Agent")
-                        );
+                        final HttpAccess httpAccess = wrapperHttpAccess(advice);
 
                         // 附加到advice上，以便在onReturning()和onThrowing()中取出
                         advice.attach(httpAccess);
@@ -133,19 +118,16 @@ public class LogServletAccessModule implements Module, LoadCompleted {
                                 classOfHttpServletResponse,
                                 advice.getTarget().getClass().getClassLoader(),
                                 advice.getParameterArray()[1],
-                                new MethodInterceptor() {
-                                    @Override
-                                    public Object invoke(MethodInvocation methodInvocation) throws Throwable {
-                                        if (contains(
-                                                new String[]{
-                                                        "setStatus",
-                                                        "sendError"
-                                                },
-                                                methodInvocation.getMethod().getName())) {
-                                            httpAccess.setStatus((Integer) methodInvocation.getArguments()[0]);
-                                        }
-                                        return methodInvocation.proceed();
+                                methodInvocation -> {
+                                    if (contains(
+                                            new String[]{
+                                                    "setStatus",
+                                                    "sendError"
+                                            },
+                                            methodInvocation.getMethod().getName())) {
+                                        httpAccess.setStatus((Integer) methodInvocation.getArguments()[0]);
                                     }
+                                    return methodInvocation.proceed();
                                 }));
 
                     }
@@ -192,12 +174,38 @@ public class LogServletAccessModule implements Module, LoadCompleted {
 
     }
 
+    /**
+     * 根据http请求包装一个HttpAccess模型
+     * <p>
+     * 通过代理模式{@link com.alibaba.jvm.sandbox.module.debug.util.InterfaceProxyUtils#puppet(Class, Object)} }调用
+     * 需要封装很多傀儡接口对象进行调用，对一些复杂场景（例如：序列化/反序列化一些业务模型）使用会有局限
+     *
+     * @param advice 事件行为通知
+     * @return 包装HttpAccess
+     */
+    protected HttpAccess wrapperHttpAccess(Advice advice) {
+
+        // 俘虏HttpServletRequest参数为傀儡
+        final IHttpServletRequest httpServletRequest = puppet(
+                IHttpServletRequest.class,
+                advice.getParameterArray()[0]);
+
+        // 初始化HttpAccess
+        return new HttpAccess(
+                httpServletRequest.getRemoteAddress(),
+                httpServletRequest.getMethod(),
+                httpServletRequest.getRequestURI(),
+                httpServletRequest.getParameterMap(),
+                httpServletRequest.getHeader("User-Agent")
+        );
+    }
+
     // 格式化ParameterMap
     private static String formatParameterMap(final Map<String, String[]> parameterMap) {
         if (MapUtils.isEmpty(parameterMap)) {
             return StringUtils.EMPTY;
         }
-        final Set<String> kvPairs = new LinkedHashSet<String>();
+        final Set<String> kvPairs = new LinkedHashSet<>();
         for (final Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
             kvPairs.add(String.format("%s=%s",
                     entry.getKey(),

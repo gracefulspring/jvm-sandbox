@@ -25,12 +25,7 @@ public class AdviceAdapterListener implements EventListener {
         this.adviceListener = adviceListener;
     }
 
-    private final ThreadLocal<OpStack> opStackRef = new ThreadLocal<OpStack>() {
-        @Override
-        protected OpStack initialValue() {
-            return new OpStack();
-        }
-    };
+    private final ThreadLocal<OpStack> opStackRef = ThreadLocal.withInitial(OpStack::new);
 
     @Override
     final public void onEvent(final Event event) throws Throwable {
@@ -246,9 +241,9 @@ public class AdviceAdapterListener implements EventListener {
     /**
      * 通知操作堆栈
      */
-    private class OpStack {
+    private static class OpStack {
 
-        private final Stack<WrapAdvice> adviceStack = new Stack<WrapAdvice>();
+        private final Stack<WrapAdvice> adviceStack = new Stack<>();
 
         boolean isEmpty() {
             return adviceStack.isEmpty();
@@ -260,12 +255,6 @@ public class AdviceAdapterListener implements EventListener {
 
         void pushForBegin(final Advice advice) {
             adviceStack.push(new WrapAdvice(advice));
-        }
-
-        WrapAdvice pop() {
-            return !adviceStack.isEmpty()
-                    ? adviceStack.pop()
-                    : null;
         }
 
         /**
@@ -298,7 +287,11 @@ public class AdviceAdapterListener implements EventListener {
         if (GaStringUtils.isEmpty(internalClassName)) {
             return internalClassName;
         } else {
-            return internalClassName.replaceAll("/", ".");
+
+            // #302
+            return internalClassName.replace('/', '.');
+            // return internalClassName.replaceAll("/", ".");
+
         }
     }
 
@@ -341,8 +334,7 @@ public class AdviceAdapterListener implements EventListener {
 
         @Override
         public boolean equals(Object o) {
-            if (null == o
-                    || !(o instanceof BehaviorCacheKey)) {
+            if (!(o instanceof BehaviorCacheKey)) {
                 return false;
             }
             final BehaviorCacheKey key = (BehaviorCacheKey) o;
@@ -411,6 +403,7 @@ public class AdviceAdapterListener implements EventListener {
             this.attachment = attachment;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public <T> T attachment() {
             return (T) attachment;

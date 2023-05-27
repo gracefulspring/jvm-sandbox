@@ -79,7 +79,7 @@ public class BehaviorStructure extends MemberStructure {
     }
 
     private Collection<String> takeJavaClassNames(final Collection<ClassStructure> classStructures) {
-        final Collection<String> javaClassNames = new ArrayList<String>();
+        final Collection<String> javaClassNames = new ArrayList<>();
         for (final ClassStructure classStructure : classStructures) {
             javaClassNames.add(classStructure.getJavaClassName());
         }
@@ -90,14 +90,12 @@ public class BehaviorStructure extends MemberStructure {
     private final LazyGet<String> signCodeLazyGet = new LazyGet<String>() {
         @Override
         protected String initialValue() {
-            return new StringBuilder(256)
-                    .append(getDeclaringClassStructure().getJavaClassName())
-                    .append("#")
-                    .append(getName())
-                    .append("(")
-                    .append(join(takeJavaClassNames(getParameterTypeClassStructures()), ","))
-                    .append(")")
-                    .toString();
+            return getDeclaringClassStructure().getJavaClassName() +
+                    "#" +
+                    getName() +
+                    "(" +
+                    join(takeJavaClassNames(getParameterTypeClassStructures()), ",") +
+                    ")";
         }
     };
 
@@ -116,15 +114,13 @@ public class BehaviorStructure extends MemberStructure {
     private final LazyGet<String> toStringLazyGet = new LazyGet<String>() {
         @Override
         protected String initialValue() {
-            return new StringBuilder(256)
-                    .append(getReturnTypeClassStructure().getJavaClassName())
-                    .append(":[")
-                    .append(join(takeJavaClassNames(getAnnotationTypeClassStructures()), ","))
-                    .append("]:")
-                    .append(getSignCode())
-                    .append(":")
-                    .append(join(takeJavaClassNames(getExceptionTypeClassStructures()), ","))
-                    .toString();
+            return getReturnTypeClassStructure().getJavaClassName() +
+                    ":[" +
+                    join(takeJavaClassNames(getAnnotationTypeClassStructures()), ",") +
+                    "]:" +
+                    getSignCode() +
+                    ":" +
+                    join(takeJavaClassNames(getExceptionTypeClassStructures()), ",");
         }
     };
 

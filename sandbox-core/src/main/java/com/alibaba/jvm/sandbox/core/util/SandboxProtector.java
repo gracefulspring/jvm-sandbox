@@ -3,8 +3,6 @@ package com.alibaba.jvm.sandbox.core.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,14 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SandboxProtector {
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ThreadLocal<AtomicInteger> isInProtectingThreadLocal = new ThreadLocal<AtomicInteger>() {
-        @Override
-        protected AtomicInteger initialValue() {
-            return new AtomicInteger(0);
-        }
-    };
+    private final ThreadLocal<AtomicInteger> isInProtectingThreadLocal = ThreadLocal.withInitial(() -> new AtomicInteger(0));
 
     /**
      * 进入守护区域
@@ -47,7 +40,7 @@ public class SandboxProtector {
      */
     public int exitProtecting() {
         final int referenceCount = isInProtectingThreadLocal.get().decrementAndGet();
-        assert referenceCount >= 0;
+        // assert referenceCount >= 0;
         if (referenceCount == 0) {
             isInProtectingThreadLocal.remove();
             if (logger.isDebugEnabled()) {
@@ -69,7 +62,12 @@ public class SandboxProtector {
      * @return TRUE:在守护区域中；FALSE：非守护区域中
      */
     public boolean isInProtecting() {
-        return isInProtectingThreadLocal.get().get() > 0;
+        // fix for #384
+        final boolean res = isInProtectingThreadLocal.get().get() > 0;
+        if(!res) {
+            isInProtectingThreadLocal.remove();
+        }
+        return res;
     }
 
     /**
@@ -80,28 +78,24 @@ public class SandboxProtector {
      * @param <T>                    接口类型
      * @return 被保护的目标接口实现
      */
+    @SuppressWarnings("unchecked")
     public <T> T protectProxy(final Class<T> protectTargetInterface,
                               final T protectTarget) {
-        return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{protectTargetInterface}, new InvocationHandler() {
-
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                final int enterReferenceCount = enterProtecting();
-                try {
-                    return method.invoke(protectTarget, args);
-                } finally {
-                    final int exitReferenceCount = exitProtecting();
-                    assert enterReferenceCount == exitReferenceCount;
-                    if (enterReferenceCount != exitReferenceCount) {
-                        logger.warn("thread:{} exit protecting with error!, expect:{} actual:{}",
-                                Thread.currentThread(),
-                                enterReferenceCount,
-                                exitReferenceCount
-                        );
-                    }
+        return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{protectTargetInterface}, (proxy, method, args) -> {
+            final int enterReferenceCount = enterProtecting();
+            try {
+                return method.invoke(protectTarget, args);
+            } finally {
+                final int exitReferenceCount = exitProtecting();
+                // assert enterReferenceCount == exitReferenceCount;
+                if (enterReferenceCount != exitReferenceCount) {
+                    logger.warn("thread:{} exit protecting with error!, expect:{} actual:{}",
+                            Thread.currentThread(),
+                            enterReferenceCount,
+                            exitReferenceCount
+                    );
                 }
             }
-
         });
     }
 

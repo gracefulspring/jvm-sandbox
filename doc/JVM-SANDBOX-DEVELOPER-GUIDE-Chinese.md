@@ -78,23 +78,22 @@ public abstract class Clock {
 
 - 一个是正常的实现
 
-  ```java
+```java
     /**
-     * 一个正常的钟实现
-     */
-    static class NormalClock extends Clock {
+ * 一个正常的钟实现
+ */
+static class NormalClock extends Clock {
 
-        @Override
-        void checkState() {
-            return;
-        }
-
-        @Override
-        void delay() throws InterruptedException {
-            Thread.sleep(1000L);
-        }
-
+    @Override
+    void checkState() {
     }
+
+    @Override
+    void delay() throws InterruptedException {
+        Thread.sleep(1000L);
+    }
+
+}
 ```
 
   运行起来能每隔一秒进行一次报时
@@ -109,7 +108,7 @@ public abstract class Clock {
 
 - 一个是损坏的钟实现
 
-  ```java
+```java
     /**
      * 一个损坏的钟实现
      */
@@ -177,7 +176,7 @@ java.lang.IllegalStateException
     <dependency>
         <groupId>com.alibaba.jvm.sandbox</groupId>
         <artifactId>sandbox-api</artifactId>
-        <version>1.0.3</version>
+        <version>1.3.1</version>
         <scope>provided</scope>
     </dependency>
 

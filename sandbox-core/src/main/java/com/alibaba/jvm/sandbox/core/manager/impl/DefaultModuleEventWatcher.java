@@ -172,9 +172,21 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
                       final Progress progress,
                       final Event.Type... eventType) {
         final int watchId = watchIdSequencer.next();
+        final String uniqueId = coreModule.getUniqueId();
+        final boolean isNativeSupported = inst.isNativeMethodPrefixSupported();
+
         // 给对应的模块追加ClassFileTransformer
-        final SandboxClassFileTransformer sandClassFileTransformer = new SandboxClassFileTransformer(
-                watchId, coreModule.getUniqueId(), matcher, listener, isEnableUnsafe, eventType, namespace);
+        final SandboxClassFileTransformer sandClassFileTransformer =
+                new SandboxClassFileTransformer(
+                        watchId,
+                        uniqueId,
+                        matcher,
+                        listener,
+                        isEnableUnsafe,
+                        eventType,
+                        namespace,
+                        isNativeSupported
+                );
 
         // 注册到CoreModule中
         coreModule.getSandboxClassFileTransformers().add(sandClassFileTransformer);
@@ -182,11 +194,20 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
         //这里addTransformer后，接下来引起的类加载都会经过sandClassFileTransformer
         inst.addTransformer(sandClassFileTransformer, true);
 
+        //设定Native支持
+        if(isNativeSupported) {
+            inst.setNativeMethodPrefix(sandClassFileTransformer, sandClassFileTransformer.getNativePrefix());
+            logger.debug("watch={} in module={} enable native method supported, prefix={}",
+                    watchId,
+                    uniqueId,
+                    sandClassFileTransformer.getNativePrefix());
+        }
+
         // 查找需要渲染的类集合
         final List<Class<?>> waitingReTransformClasses = classDataSource.findForReTransform(matcher);
         logger.info("watch={} in module={} found {} classes for watch(ing).",
                 watchId,
-                coreModule.getUniqueId(),
+                uniqueId,
                 waitingReTransformClasses.size()
         );
 
@@ -198,7 +219,6 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
 
             // 应用JVM
             reTransformClasses(watchId,waitingReTransformClasses, progress);
-
             // 计数
             cCnt += sandClassFileTransformer.getAffectStatistic().cCnt();
             mCnt += sandClassFileTransformer.getAffectStatistic().mCnt();
@@ -222,7 +242,7 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
     public void delete(final int watcherId,
                        final Progress progress) {
 
-        final Set<Matcher> waitingRemoveMatcherSet = new LinkedHashSet<Matcher>();
+        final Set<Matcher> waitingRemoveMatcherSet = new LinkedHashSet<>();
 
         // 找出待删除的SandboxClassFileTransformer
         final Iterator<SandboxClassFileTransformer> cftIt = coreModule.getSandboxClassFileTransformers().iterator();

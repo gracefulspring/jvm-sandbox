@@ -35,7 +35,7 @@ class ModuleJarLoader {
     private boolean loadingModules(final ModuleJarClassLoader moduleClassLoader,
                                    final ModuleLoadCallback mCb) {
 
-        final Set<String> loadedModuleUniqueIds = new LinkedHashSet<String>();
+        final Set<String> loadedModuleUniqueIds = new LinkedHashSet<>();
         final ServiceLoader<Module> moduleServiceLoader = ServiceLoader.load(Module.class, moduleClassLoader);
         final Iterator<Module> moduleIt = moduleServiceLoader.iterator();
         while (moduleIt.hasNext()) {
@@ -64,7 +64,7 @@ class ModuleJarLoader {
 
             // 判断模块ID是否合法
             if (StringUtils.isBlank(uniqueId)) {
-                logger.warn("loading module instance failed: @Information.id is missing, will be ignored. class={};module-jar={};",
+                logger.warn("loading module instance failed: @Information#id is missing, will be ignored. class={};module-jar={};",
                         classOfModule,
                         moduleJarFile
                 );
@@ -113,6 +113,7 @@ class ModuleJarLoader {
 
     void load(final ModuleLoadCallback mCb) throws IOException {
 
+
         boolean hasModuleLoadedSuccessFlag = false;
         ModuleJarClassLoader moduleJarClassLoader = null;
         logger.info("prepare loading module-jar={};", moduleJarFile);
@@ -154,7 +155,7 @@ class ModuleJarLoader {
          * @throws Throwable 加载回调异常
          */
         void onLoad(String uniqueId,
-                    Class moduleClass,
+                    Class<?> moduleClass,
                     Module module,
                     File moduleJarFile,
                     ModuleJarClassLoader moduleClassLoader) throws Throwable;

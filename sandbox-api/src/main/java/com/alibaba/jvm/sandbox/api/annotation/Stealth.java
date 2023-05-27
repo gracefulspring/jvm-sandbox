@@ -11,6 +11,7 @@ import java.lang.annotation.*;
  *
  * @author luanjia@taobao.com
  * @since {@code sandbox-api:1.0.10}
+ * @since {@code sandbox-api:1.4.0} 隐形屏障标注在单独的类上不再生效
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

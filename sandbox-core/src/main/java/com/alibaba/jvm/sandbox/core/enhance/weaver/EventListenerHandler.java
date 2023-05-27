@@ -5,7 +5,6 @@ import com.alibaba.jvm.sandbox.api.event.BeforeEvent;
 import com.alibaba.jvm.sandbox.api.event.Event;
 import com.alibaba.jvm.sandbox.api.event.InvokeEvent;
 import com.alibaba.jvm.sandbox.api.listener.EventListener;
-import com.alibaba.jvm.sandbox.core.classloader.BusinessClassLoaderHolder;
 import com.alibaba.jvm.sandbox.core.util.ObjectIDs;
 import com.alibaba.jvm.sandbox.core.util.SandboxProtector;
 import org.slf4j.Logger;
@@ -40,7 +39,7 @@ public class EventListenerHandler implements SpyHandler {
 
     // 全局处理器ID:处理器映射集合
     private final Map<Integer/*LISTENER_ID*/, EventProcessor> mappingOfEventProcessor
-            = new ConcurrentHashMap<Integer, EventProcessor>();
+            = new ConcurrentHashMap<>();
 
     /**
      * 注册事件处理器
@@ -337,8 +336,6 @@ public class EventListenerHandler implements SpyHandler {
         final int processId = process.getProcessId();
 
         final ClassLoader javaClassLoader = ObjectIDs.instance.getObject(targetClassLoaderObjectID);
-        //放置业务类加载器
-        BusinessClassLoaderHolder.setBussinessClassLoader(javaClassLoader);
         final BeforeEvent event = process.getEventFactory().makeBeforeEvent(
                 processId,
                 invokeId,
@@ -358,20 +355,12 @@ public class EventListenerHandler implements SpyHandler {
 
     @Override
     public Spy.Ret handleOnThrows(int listenerId, Throwable throwable) throws Throwable {
-        try{
-            return handleOnEnd(listenerId, throwable, false);
-        }finally {
-            BusinessClassLoaderHolder.removeBussinessClassLoader();
-        }
+        return handleOnEnd(listenerId, throwable, false);
     }
 
     @Override
     public Spy.Ret handleOnReturn(int listenerId, Object object) throws Throwable {
-        try{
-            return handleOnEnd(listenerId, object, true);
-        }finally {
-            BusinessClassLoaderHolder.removeBussinessClassLoader();
-        }
+        return handleOnEnd(listenerId, object, true);
     }
 
 
@@ -400,6 +389,10 @@ public class EventListenerHandler implements SpyHandler {
         // 2. super.<init>
         // 处理方式是直接返回,不做任何事件的处理和代码流程的改变,放弃对super.<init>的观察，可惜了
         if (process.isEmptyStack()) {
+
+            // 修复 #194 问题
+            wrap.processRef.remove();
+
             return newInstanceForNone();
         }
 
@@ -615,7 +608,7 @@ public class EventListenerHandler implements SpyHandler {
 
     // ----------------------------------- 单例模式 -----------------------------------
 
-    private static EventListenerHandler singleton = new EventListenerHandler();
+    private final static EventListenerHandler singleton = new EventListenerHandler();
 
     public static EventListenerHandler getSingleton() {
         return singleton;

@@ -78,23 +78,22 @@ This clock has two implementation classes，
 
 - One is normal to achieve
 
-  ```java
+```java
     /**
-     * One is normal to achieve
-     */
-    static class NormalClock extends Clock {
+ * One is normal to achieve
+ */
+static class NormalClock extends Clock {
 
-        @Override
-        void checkState() {
-            return;
-        }
-
-        @Override
-        void delay() throws InterruptedException {
-            Thread.sleep(1000L);
-        }
-
+    @Override
+    void checkState() {
     }
+
+    @Override
+    void delay() throws InterruptedException {
+        Thread.sleep(1000L);
+    }
+
+}
 ```
 
   Run up to once every second
@@ -109,7 +108,7 @@ This clock has two implementation classes，
 
 - One is the damaged bell to achieve
 
-  ```java
+```java
     /**
      * A damaged bell is realized
      */
@@ -130,7 +129,7 @@ This clock has two implementation classes，
   
   Run every 10 seconds after the time when the error will be reported
 
-  ```
+```
 java.lang.IllegalStateException
         at Clock$BrokenClock.checkState(Clock.java:77)
         at Clock.report(Clock.java:40)
@@ -151,7 +150,7 @@ java.lang.IllegalStateException
         at Clock.report(Clock.java:40)
         at Clock.loopReport(Clock.java:50)
         at Clock.main(Clock.java:94)
-  ```
+```
   
 ### Repair damaged bells
 
@@ -176,7 +175,7 @@ The problem lies in two parts of `BrokenClock` 's
     <dependency>
         <groupId>com.alibaba.jvm.sandbox</groupId>
         <artifactId>sandbox-api</artifactId>
-        <version>1.0.3</version>
+        <version>1.3.1</version>
         <scope>provided</scope>
     </dependency>
 

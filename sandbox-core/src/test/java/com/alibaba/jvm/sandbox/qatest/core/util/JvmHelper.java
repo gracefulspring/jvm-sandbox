@@ -1,7 +1,6 @@
 package com.alibaba.jvm.sandbox.qatest.core.util;
 
 import com.alibaba.jvm.sandbox.api.event.Event;
-import com.alibaba.jvm.sandbox.api.event.Event.Type;
 import com.alibaba.jvm.sandbox.api.filter.Filter;
 import com.alibaba.jvm.sandbox.api.listener.EventListener;
 import com.alibaba.jvm.sandbox.api.listener.ext.AdviceListener;
@@ -15,7 +14,6 @@ import com.alibaba.jvm.sandbox.core.util.matcher.MatchingResult;
 import com.alibaba.jvm.sandbox.core.util.matcher.structure.ClassStructureFactory;
 import com.alibaba.jvm.sandbox.qatest.core.enhance.listener.InterruptedAdviceAdapterListener;
 import com.alibaba.jvm.sandbox.qatest.core.enhance.transformer.TestThirdEnhance;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -107,10 +105,10 @@ public class JvmHelper {
                            final Event.Type... eventTypes) {
             this.filter = filter;
             this.listener = new InterruptedAdviceAdapterListener(listener);
-            final List<Event.Type> eventTypeList = new ArrayList<Event.Type>();
+            final List<Event.Type> eventTypeList = new ArrayList<>();
             CollectionUtils.addAll(eventTypeList, toArray(BEFORE, RETURN, THROWS, IMMEDIATELY_THROWS, IMMEDIATELY_RETURN));
             CollectionUtils.addAll(eventTypeList, eventTypes);
-            this.eventTypes = eventTypeList.toArray(new Event.Type[]{});
+            this.eventTypes = eventTypeList.toArray(EMPTY);
         }
 
         public byte[] transform(final String namespace,
@@ -128,7 +126,7 @@ public class JvmHelper {
             );
 
             if (matchingResult.isMatched()) {
-                return new EventEnhancer().toByteCodeArray(
+                return new EventEnhancer("$$SANDBOX$").toByteCodeArray(
                         loader,
                         byteCodes,
                         matchingResult.getBehaviorSignCodes(),
@@ -196,9 +194,9 @@ public class JvmHelper {
     static class PrivateClassLoader extends ClassLoader {
 
         private final Map<String, byte[]> javaClassByteArrayMap
-                = new HashMap<String, byte[]>();
+                = new HashMap<>();
 
-        private final Set<Class<?>> classes = new LinkedHashSet<Class<?>>();
+        private final Set<Class<?>> classes = new LinkedHashSet<>();
 
         public PrivateClassLoader() {
         }

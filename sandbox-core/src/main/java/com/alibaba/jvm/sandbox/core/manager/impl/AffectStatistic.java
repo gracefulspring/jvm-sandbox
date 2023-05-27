@@ -17,23 +17,21 @@ import java.util.Set;
 public class AffectStatistic {
 
     // 影响类去重码集合
-    private final Set<String> affectClassUniqueSet = new HashSet<String>();
+    private final Set<String> affectClassUniqueSet = new HashSet<>();
 
     // 影响方法去重码集合
-    private final Set<String> affectMethodUniqueSet = new HashSet<String>();
+    private final Set<String> affectMethodUniqueSet = new HashSet<>();
 
     // 计算唯一编码
     private String computeUniqueCode(final ClassLoader loader, final String javaClassName) {
-        return new StringBuilder()
-                .append(ObjectIDs.instance.identity(loader))
-                .append("_c_")
-                .append(javaClassName)
-                .toString();
+        return ObjectIDs.instance.identity(loader) +
+                "_c_" +
+                javaClassName;
     }
 
     private Set<String> computeUniqueCode(final ClassLoader loader,
                                           final Set<String> behaviorSignCodes) {
-        final Set<String> uniqueCodes = new LinkedHashSet<String>();
+        final Set<String> uniqueCodes = new LinkedHashSet<>();
         for (final String behaviorSignCode : behaviorSignCodes) {
             uniqueCodes.add(
                     ObjectIDs.instance.identity(loader)

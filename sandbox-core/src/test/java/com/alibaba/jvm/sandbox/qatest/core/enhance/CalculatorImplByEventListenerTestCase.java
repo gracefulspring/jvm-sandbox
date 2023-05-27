@@ -3,12 +3,9 @@ package com.alibaba.jvm.sandbox.qatest.core.enhance;
 import com.alibaba.jvm.sandbox.api.event.BeforeEvent;
 import com.alibaba.jvm.sandbox.api.event.Event;
 import com.alibaba.jvm.sandbox.qatest.core.enhance.listener.LineNumTracingEventListener;
-import com.alibaba.jvm.sandbox.qatest.core.enhance.listener.TracingAdviceListener;
 import com.alibaba.jvm.sandbox.qatest.core.enhance.listener.TracingEventListener;
 import com.alibaba.jvm.sandbox.qatest.core.enhance.target.Calculator;
 import com.alibaba.jvm.sandbox.qatest.core.util.JvmHelper;
-import com.alibaba.jvm.sandbox.qatest.core.util.JvmHelper.ThirdTransformer;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -20,6 +17,7 @@ import static com.alibaba.jvm.sandbox.qatest.core.enhance.target.Calculator.Test
 import static com.alibaba.jvm.sandbox.qatest.core.enhance.target.Calculator.TestCase.SUM$EXCEPTION;
 import static com.alibaba.jvm.sandbox.qatest.core.util.CalculatorHelper.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCase {
 
@@ -530,7 +528,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
                 .loadClass(CALCULATOR_CLASS_NAME);
 
         assertEquals(100, sum(newInstance(calculatorClass), 10,20));
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 BEFORE,
@@ -564,7 +562,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
                 .loadClass(CALCULATOR_CLASS_NAME);
 
         assertEquals(100, sum(newInstance(calculatorClass), 10,20));
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 BEFORE,
@@ -603,7 +601,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
             assertEquals(ERROR_EXCEPTION_MESSAGE, throwable.getMessage());
         }
 
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 BEFORE,
@@ -640,7 +638,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
             assertEquals(ERROR_EXCEPTION_MESSAGE, throwable.getMessage());
         }
 
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 BEFORE,
@@ -672,7 +670,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
                 .loadClass(CALCULATOR_CLASS_NAME);
 
         assertEquals(100, sum(newInstance(calculatorClass, ADD$EXCEPTION), 10,20));
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 BEFORE,
@@ -711,7 +709,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
             assertEquals(ERROR_EXCEPTION_MESSAGE, throwable.getMessage());
         }
 
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 BEFORE,
@@ -756,7 +754,7 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
 
         int value=(Integer) calculatorClass.getMethod("addInStatic",int.class,int.class).invoke(null,10,20);
         assertEquals(100, value);
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 RETURN
@@ -789,11 +787,11 @@ public class CalculatorImplByEventListenerTestCase implements ICalculatorTestCas
                 )
                 .loadClass(CALCULATOR_CLASS_NAME);
 
-        calculatorClass.getMethod("settCaseInStatic",
+        calculatorClass.getMethod("setCaseInStatic",
                 Calculator.TestCase.ADD$EXCEPTION.getClass()).invoke(null,Calculator.TestCase.ADD$EXCEPTION);
         int value=(Integer) calculatorClass.getMethod("addInStatic",int.class,int.class).invoke(null,10,20);
         assertEquals(100, value);
-        assertEquals(true, stack.isEmpty());
+        assertTrue(stack.isEmpty());
         listener.assertEventTracing(
                 BEFORE,
                 THROWS

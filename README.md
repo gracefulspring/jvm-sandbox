@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.org/alibaba/jvm-sandbox.svg?branch=master)](https://travis-ci.org/alibaba/jvm-sandbox)
 [![codecov](https://codecov.io/gh/alibaba/jvm-sandbox/branch/master/graph/badge.svg)](https://codecov.io/gh/alibaba/jvm-sandbox)
-![license](https://img.shields.io/github/license/alibaba/arthas.svg)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/alibaba/jvm-sandbox.svg)](http://isitmaintained.com/project/alibaba/jvm-sandbox "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/alibaba/jvm-sandbox.svg)](http://isitmaintained.com/project/alibaba/jvm-sandbox "Percentage of issues still open")
 
@@ -20,7 +19,7 @@
 如果你有以上研发诉求，那么你就是JVM-SANDBOX(以下简称沙箱容器)的潜在客户。沙箱容器提供
 
 1. 动态增强类你所指定的类，获取你想要的参数和行信息甚至改变方法执行
-1. 动态可插拔容器框架
+2. 动态可插拔容器框架
 
 ## 项目简介
 
@@ -29,10 +28,10 @@
 ### 沙箱的特性
 
 1. `无侵入`：目标应用无需重启也无需感知沙箱的存在
-1. `类隔离`：沙箱以及沙箱的模块不会和目标应用的类相互干扰
-1. `可插拔`：沙箱以及沙箱的模块可以随时加载和卸载，不会在目标应用留下痕迹
-1. `多租户`：目标应用可以同时挂载不同租户下的沙箱并独立控制
-1. `高兼容`：支持JDK[6,11]
+2. `类隔离`：沙箱以及沙箱的模块不会和目标应用的类相互干扰
+3. `可插拔`：沙箱以及沙箱的模块可以随时加载和卸载，不会在目标应用留下痕迹
+4. `多租户`：目标应用可以同时挂载不同租户下的沙箱并独立控制
+5. `高兼容`：支持JDK[6,11]
 
 ### 沙箱常见应用场景
 
@@ -50,14 +49,14 @@
 在常见的AOP框架实现方案中，有静态编织和动态编织两种。
 
 1. **静态编织**：静态编织发生在字节码生成时根据一定框架的规则提前将AOP字节码插入到目标类和方法中，实现AOP；
-1. **动态编织**：动态编织则允许在JVM运行过程中完成指定方法的AOP字节码增强.常见的动态编织方案大多采用重命名原有方法，再新建一个同签名的方法来做代理的工作模式来完成AOP的功能(常见的实现方案如CgLib)，但这种方式存在一些应用边界：
+2. **动态编织**：动态编织则允许在JVM运行过程中完成指定方法的AOP字节码增强.常见的动态编织方案大多采用重命名原有方法，再新建一个同签名的方法来做代理的工作模式来完成AOP的功能(常见的实现方案如CgLib)，但这种方式存在一些应用边界：
    - **侵入性**：对被代理的目标类需要进行侵入式改造。比如：在Spring中必须是托管于Spring容器中的Bean
    - **固化性**：目标代理方法在启动之后即固化，无法重新对一个已有方法进行AOP增强
  
 要解决`无侵入`的特性需要AOP框架具备 **在运行时完成目标方法的增强和替换**。在JDK的规范中运行期重定义一个类必须准循以下原则
   1. 不允许新增、修改和删除成员变量
-  1. 不允许新增和删除方法
-  1. 不允许修改方法签名
+  2. 不允许新增和删除方法
+  3. 不允许修改方法签名
 
 JVM-SANDBOX属于基于Instrumentation的动态编织类的AOP框架，**通过精心构造了字节码增强逻辑，使得沙箱的模块能在不违反JDK约束情况下实现对目标应用方法的`无侵入`运行时AOP拦截**。
 
@@ -86,8 +85,8 @@ try {
 基于`BEFORE`、`RETURN`和`THROWS`三个环节事件分离，沙箱的模块可以完成很多类AOP的操作。
 
 1. 可以感知和改变方法调用的入参
-1. 可以感知和改变方法调用返回值和抛出的异常
-1. 可以改变方法执行的流程
+2. 可以感知和改变方法调用返回值和抛出的异常
+3. 可以改变方法执行的流程
     - 在方法体执行之前直接返回自定义结果对象，原有方法代码将不会被执行
     - 在方法体返回之前重新构造新的结果对象，甚至可以改变为抛出异常
     - 在方法体抛出异常之后重新抛出新的异常，甚至可以改变为正常返回
@@ -109,16 +108,23 @@ try {
 ![jvm-sandbox-architecture](https://github.com/alibaba/jvm-sandbox/wiki/img/jvm-sandbox-architecture.png)
 
 ## 快速安装
-
-- **下载并安装**
+- **下载并安装或自行打包**
 
   ```shell
-  # 下载最新版本的JVM-SANDBOX
-  wget http://ompc.oss-cn-hangzhou.aliyuncs.com/jvm-sandbox/release/sandbox-stable-bin.zip
+  # 下载最新版本的JVM-SANDBOX，oss已到期，或者oss链接不可访问时，可选择自行打包
+  wget https://ompc.oss-cn-hangzhou.aliyuncs.com/jvm-sandbox/release/sandbox-1.3.3-bin.zip
 
   # 解压
-  unzip sandbox-stable-bin.zip
+  unzip sandbox-1.3.3-bin.zip
   ```
+  ```shell
+  #自行打包
+   cd bin
+   ./sandbox-packages.sh
+   #target路径下有多种构建件类型，选择一个合适的使用
+   cd ../target
+  ```
+
 
 - **挂载目标应用**
 
@@ -153,6 +159,52 @@ try {
   ./sandbox.sh -p 33342 -S
   jvm-sandbox[default] shutdown finished.
   ```
+
+## 项目构建
+
+当你修改了sandbox的代码后，想打包成自己需要的发行版，可以执行以下命令
+
+> 脚本执行目录默认为项目主目录，后续不在另外说明
+
+```shell
+cd bin
+./sandbox-package.sh
+```
+
+命令执行成功后会在target目录下生成`sandbox-<版本号>-bin.zip`文件
+
+### 构建注意事项
+
+1. 必须用JDK1.8进行构建，工程自身和maven插件中使用了tools.jar
+2. 必须在Linux/Mac/Unix下进行构建，有部分测试用例没有考虑好$USER_HOME的目录路径在windows下的特殊性，会导致测试用例跑不通过。
+
+### 修改sandbox版本号
+
+sandbox的版本号需要修改所有的pom文件以及`.//sandbox-core/src/main/resources/com/alibaba/jvm/sandbox/version`，这里有一个脚本方便执行
+
+```shell
+cd bin
+./set-version.sh -s 1.4.0
+```
+
+脚本第一个参数是`[s|r]`
+- **s** : SNAPSHOT版，会自动在版本号后边追加`-SNAPSHOT`
+- **r** : 正式版
+
+### 本地仓库安装api包
+
+如果本次你修改了sandbox-api、sandbox-common-api、sandbox-module-starter等本应该发布到中央仓库的包，但你需要本地测试验证，可以执行以下命令
+
+```shell
+mvn clean install
+```
+
+以下四个包将会安装到本地manven仓库
+- sandbox
+- sandbox-api
+- sandbox-common-api
+- sandbox-module-starter
+- sandbox-provider-api
 
 ## 项目背景
 

@@ -1,10 +1,13 @@
 package com.alibaba.jvm.sandbox.core.enhance.weaver;
 
 import com.alibaba.jvm.sandbox.api.event.*;
+import com.alibaba.jvm.sandbox.core.util.UnCaughtException;
 import com.alibaba.jvm.sandbox.core.util.UnsafeUtils;
 import sun.misc.Unsafe;
 
-import static com.alibaba.jvm.sandbox.core.util.SandboxReflectUtils.unCaughtSetClassDeclaredJavaFieldValue;
+import java.lang.reflect.Field;
+
+import static com.alibaba.jvm.sandbox.core.util.SandboxReflectUtils.unCaughtGetClassDeclaredJavaField;
 
 /**
  * 单例事件工厂
@@ -192,6 +195,14 @@ class SingleEventFactory {
         return callThrowsEvent;
     }
 
+    private final static Field throwableFieldInThrowsEvent = unCaughtGetClassDeclaredJavaField(ThrowsEvent.class, "throwable");
+    private final static Field objectFieldInReturnEvent = unCaughtGetClassDeclaredJavaField(ReturnEvent.class, "object");
+
+    static {
+        throwableFieldInThrowsEvent.setAccessible(true);
+        objectFieldInReturnEvent.setAccessible(true);
+    }
+
     public void returnEvent(Event event) {
         switch (event.type) {
             case BEFORE:
@@ -202,13 +213,21 @@ class SingleEventFactory {
             case THROWS:
                 // FIXED #130
                 // unsafe.putObject(event, throwableFieldInThrowsEventOffset, null);
-                unCaughtSetClassDeclaredJavaFieldValue(ThrowsEvent.class, "throwable", event, null);
+                try{
+                    throwableFieldInThrowsEvent.set(event, null);
+                }catch (IllegalAccessException e){
+                    throw new UnCaughtException(e);
+                }
                 break;
             case IMMEDIATELY_RETURN:
             case RETURN:
                 // FIXED #130
                 // unsafe.putObject(event, objectFieldInReturnEventOffset, null);
-                unCaughtSetClassDeclaredJavaFieldValue(ReturnEvent.class, "object", event, null);
+                try {
+                    objectFieldInReturnEvent.set(event, null);
+                }catch (IllegalAccessException e){
+                    throw new UnCaughtException(e);
+                }
                 break;
         }
     }

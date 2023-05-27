@@ -124,7 +124,7 @@ class EmptyClassStructure implements ClassStructure {
 
     @Override
     public LinkedHashSet<ClassStructure> getFamilySuperClassStructures() {
-        return new LinkedHashSet<ClassStructure>();
+        return new LinkedHashSet<>();
     }
 
     @Override
@@ -273,11 +273,25 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
 
     // 获取资源数据流
     // 一般而言可以从loader直接获取，如果获取不到那么这个类也会能加载成功
-    // 但如果遇到来自BootstrapClassLoader的类就必须从java.lang.Object来获取
-    private InputStream getResourceAsStream(final String resourceName) {
-        return isBootstrapClassLoader()
-                ? Object.class.getResourceAsStream("/" + resourceName)
-                : loader.getResourceAsStream(resourceName);
+    // 但如果遇到来自BootstrapClassLoader的类就必须从java.lang.Object来获取，但是该方法仅限于jdk8
+    // 对于jdk >= 9的版本来说，需要先获取到相关类，然后通过这个类获取自己的resource
+    private InputStream getResourceAsStream(final String javaClassName) {
+        final String resourceName = internalClassNameToResourceName(toInternalClassName(javaClassName));
+        InputStream ins = null;
+        if(isBootstrapClassLoader()) {
+            try {
+                ins = Object.class.getResourceAsStream("/" + resourceName);
+                if(null == ins) {
+                    Class<?> clz = Class.forName(javaClassName, false, null);
+                    ins = clz.getResourceAsStream("/" + resourceName);
+                }
+            } catch (Throwable e) {
+                // pass
+            }
+        } else {
+            ins = loader.getResourceAsStream(resourceName);
+        }
+        return ins;
     }
 
     // 将内部类名称转换为资源名称
@@ -287,9 +301,6 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
 
     private final static Cache<Pair, ClassStructure> classStructureCache
             = CacheBuilder.newBuilder().maximumSize(1024).build();
-
-//    private final static GaLRUCache<Pair, ClassStructure> classStructureCache
-//            = new GaLRUCache<Pair, ClassStructure>(1024);
 
     // 构造一个类结构实例
     private ClassStructure newInstance(final String javaClassName) {
@@ -315,8 +326,8 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
         if (null != existClassStructure) {
             return existClassStructure;
         } else {
-
-            final InputStream is = getResourceAsStream(internalClassNameToResourceName(toInternalClassName(javaClassName)));
+            // fix for #385
+            final InputStream is = getResourceAsStream(toJavaClassName(javaClassName));
             if (null != is) {
                 try {
                     final ClassStructure classStructure = new ClassStructureImplByAsm(is, loader);
@@ -339,7 +350,7 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
 
     // 构造一个类结构实例数组
     private List<ClassStructure> newInstances(final String[] javaClassNameArray) {
-        final List<ClassStructure> classStructures = new ArrayList<ClassStructure>();
+        final List<ClassStructure> classStructures = new ArrayList<>();
         if (null == javaClassNameArray) {
             return classStructures;
         }
@@ -401,7 +412,7 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
             = new LazyGet<List<ClassStructure>>() {
         @Override
         protected List<ClassStructure> initialValue() {
-            final List<ClassStructure> annotationTypeClassStructures = new ArrayList<ClassStructure>();
+            final List<ClassStructure> annotationTypeClassStructures = new ArrayList<>();
             accept(new ClassVisitor(ASM7) {
 
                 @Override
@@ -430,7 +441,7 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
             = new LazyGet<List<BehaviorStructure>>() {
         @Override
         protected List<BehaviorStructure> initialValue() {
-            final List<BehaviorStructure> behaviorStructures = new ArrayList<BehaviorStructure>();
+            final List<BehaviorStructure> behaviorStructures = new ArrayList<>();
             accept(new ClassVisitor(ASM7) {
 
                 @Override
@@ -449,10 +460,10 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
                     return new MethodVisitor(ASM7, super.visitMethod(access, name, desc, signature, exceptions)) {
 
                         private final Type methodType = Type.getMethodType(desc);
-                        private final List<ClassStructure> annotationTypeClassStructures = new ArrayList<ClassStructure>();
+                        private final List<ClassStructure> annotationTypeClassStructures = new ArrayList<>();
 
                         private String[] typeArrayToJavaClassNameArray(final Type[] typeArray) {
-                            final List<String> javaClassNames = new ArrayList<String>();
+                            final List<String> javaClassNames = new ArrayList<>();
                             if (null != typeArray) {
                                 for (Type type : typeArray) {
                                     javaClassNames.add(type.getClassName());

@@ -27,6 +27,12 @@ import static org.objectweb.asm.Opcodes.ASM7;
 public class EventEnhancer implements Enhancer {
 
     private static final Logger logger = LoggerFactory.getLogger(EventEnhancer.class);
+    private final String nativePrefix;
+
+    public EventEnhancer(String nativePrefix) {
+        this.nativePrefix = nativePrefix;
+    }
+
 
     /**
      * 创建ClassWriter for asm
@@ -98,12 +104,12 @@ public class EventEnhancer implements Enhancer {
         final ClassWriter cw = createClassWriter(targetClassLoader, cr);
         final int targetClassLoaderObjectID = ObjectIDs.instance.identity(targetClassLoader);
         cr.accept(
-                new EventWeaver(
-                        ASM7, cw, namespace, listenerId,
+                new EventWeaver(ASM7, cw, namespace, listenerId,
                         targetClassLoaderObjectID,
                         cr.getClassName(),
                         signCodes,
-                        eventTypeArray
+                        eventTypeArray,
+                        nativePrefix
                 ),
                 EXPAND_FRAMES
         );
